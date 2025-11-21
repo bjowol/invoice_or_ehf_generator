@@ -19,12 +19,12 @@ export default function NewInvoicePage() {
     new Date().toISOString().split('T')[0]
   );
   const [dueDate, setDueDate] = useState(
-    new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
   const [currency, setCurrency] = useState('NOK');
   const [language, setLanguage] = useState<'no' | 'en'>('no');
   const [notes, setNotes] = useState('');
-  const [paymentTerms, setPaymentTerms] = useState('Netto 14 dager');
+  const [paymentTerms, setPaymentTerms] = useState('Netto 30 dager');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [lines, setLines] = useState<InvoiceLine[]>([
     {
@@ -290,7 +290,7 @@ export default function NewInvoicePage() {
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
                 className="form-control"
-                placeholder="2024-001"
+                placeholder={new Date().getFullYear() + "-001"}
                 required
               />
             </div>
