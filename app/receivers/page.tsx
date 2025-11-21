@@ -5,6 +5,7 @@ import { Organization, Person, BrregEnhet } from '@/lib/types';
 import OrganizationForm from '@/components/OrganizationForm';
 import PersonForm from '@/components/PersonForm';
 import BrregSearch from '@/components/BrregSearch';
+import { storage } from '@/lib/utils/clientStorage';
 
 type Receiver = Organization | Person;
 
@@ -20,15 +21,13 @@ export default function ReceiversPage() {
   }, []);
 
   async function fetchReceivers() {
-    const response = await fetch('/api/receivers');
-    const data = await response.json();
-    setReceivers(data);
+    setReceivers(storage.getReceivers());
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Er du sikker på at du vil slette denne mottakeren?')) return;
 
-    await fetch(`/api/receivers/${id}`, { method: 'DELETE' });
+    storage.deleteReceiver(id);
     fetchReceivers();
   }
 
@@ -48,9 +47,24 @@ export default function ReceiversPage() {
   async function handleImportFromBrreg(enhet: BrregEnhet) {
     let enriched = enhet;
     try {
-      const detailRes = await fetch(`/api/enheter/${enhet.organisasjonsnummer}`);
+      const baseUrl = `https://data.brreg.no/enhetsregisteret/api/enheter/${enhet.organisasjonsnummer}`;
+      const detailRes = await fetch(baseUrl);
       if (detailRes.ok) {
         enriched = await detailRes.json();
+      }
+      const contactRes = await fetch(`${baseUrl}/kontaktinformasjon`);
+      if (contactRes.ok) {
+        const contact = await contactRes.json();
+        enriched = {
+          ...enriched,
+          kontaktinformasjon: {
+            ...(enriched as any).kontaktinformasjon,
+            telefon: contact.telefon || contact.telefonnummer,
+            mobiltelefon: contact.mobiltelefon || contact.mobil,
+            epost: contact.epost || contact.epostadresse,
+            epostadresse: contact.epostadresse || contact.epost,
+          },
+        } as BrregEnhet;
       }
     } catch (error) {
       console.warn('Kunne ikke hente detaljer fra Brreg', error);
@@ -82,19 +96,21 @@ export default function ReceiversPage() {
   }
 
   async function handleSubmit(receiver: Receiver) {
-    if (editingReceiver && 'id' in editingReceiver) {
-      await fetch(`/api/receivers/${editingReceiver.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(receiver),
-      });
-    } else {
-      await fetch('/api/receivers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(receiver),
-      });
-    }
+    const now = new Date().toISOString();
+    const receiverWithMeta = {
+      ...receiver,
+      id:
+        editingReceiver && 'id' in editingReceiver
+          ? editingReceiver.id
+          : crypto.randomUUID(),
+      createdAt:
+        editingReceiver && 'createdAt' in editingReceiver
+          ? editingReceiver.createdAt
+          : now,
+      updatedAt: now,
+    } as Receiver;
+
+    storage.saveReceiver(receiverWithMeta);
     setIsFormOpen(false);
     setEditingReceiver(null);
     fetchReceivers();

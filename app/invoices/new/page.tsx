@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Organization, Person, Invoice, InvoiceLine } from '@/lib/types';
+import { storage } from '@/lib/utils/clientStorage';
+import { generateInvoicePDF } from '@/lib/utils/pdf-generator';
+import { generateEHF } from '@/lib/utils/ehf-generator';
 
 type Sender = Organization | Person;
 type Receiver = Organization | Person;
@@ -42,14 +45,8 @@ export default function NewInvoicePage() {
   }, []);
 
   async function fetchSendersAndReceivers() {
-    const [sendersRes, receiversRes] = await Promise.all([
-      fetch('/api/senders'),
-      fetch('/api/receivers'),
-    ]);
-    const sendersData = await sendersRes.json();
-    const receiversData = await receiversRes.json();
-    setSenders(sendersData);
-    setReceivers(receiversData);
+    setSenders(storage.getSenders());
+    setReceivers(storage.getReceivers());
   }
 
   function addLine() {
@@ -143,17 +140,12 @@ export default function NewInvoicePage() {
         updatedAt: new Date().toISOString(),
       };
 
-      const response = await fetch('/api/invoices/generate-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(invoice),
+      storage.saveInvoice(invoice);
+
+      const pdfBytes = await generateInvoicePDF(invoice);
+      const blob = new Blob([pdfBytes.buffer as ArrayBuffer], {
+        type: 'application/pdf',
       });
-
-      if (!response.ok) {
-        throw new Error('Kunne ikke generere PDF');
-      }
-
-      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -207,17 +199,10 @@ export default function NewInvoicePage() {
         updatedAt: new Date().toISOString(),
       };
 
-      const response = await fetch('/api/invoices/generate-ehf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(invoice),
-      });
+      storage.saveInvoice(invoice);
 
-      if (!response.ok) {
-        throw new Error('Kunne ikke generere EHF XML');
-      }
-
-      const blob = await response.blob();
+      const xml = generateEHF(invoice);
+      const blob = new Blob([xml], { type: 'application/xml' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

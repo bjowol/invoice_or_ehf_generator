@@ -25,7 +25,9 @@ export default function BrregSearch({ onSelect }: BrregSearchProps) {
       const params = new URLSearchParams();
       params.set(searchType, searchQuery);
 
-      const response = await fetch(`/api/enheter?${params}`);
+      const response = await fetch(
+        `https://data.brreg.no/enhetsregisteret/api/enheter?${params.toString()}`
+      );
       if (!response.ok) {
         throw new Error('Kunne ikke søke i Brønnøysundregistrene');
       }

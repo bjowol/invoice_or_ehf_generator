@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Organization, Person, BrregEnhet, BrregSearchResponse } from '@/lib/types';
+import { Organization, Person, BrregEnhet } from '@/lib/types';
 import OrganizationForm from '@/components/OrganizationForm';
 import PersonForm from '@/components/PersonForm';
 import BrregSearch from '@/components/BrregSearch';
+import { storage } from '@/lib/utils/clientStorage';
 
 type Sender = Organization | Person;
 
@@ -20,15 +21,13 @@ export default function SendersPage() {
   }, []);
 
   async function fetchSenders() {
-    const response = await fetch('/api/senders');
-    const data = await response.json();
-    setSenders(data);
+    setSenders(storage.getSenders());
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Er du sikker på at du vil slette denne avsenderen?')) return;
 
-    await fetch(`/api/senders/${id}`, { method: 'DELETE' });
+    storage.deleteSender(id);
     fetchSenders();
   }
 
@@ -48,9 +47,24 @@ export default function SendersPage() {
   async function handleImportFromBrreg(enhet: BrregEnhet) {
     let enriched = enhet;
     try {
-      const detailRes = await fetch(`/api/enheter/${enhet.organisasjonsnummer}`);
+      const baseUrl = `https://data.brreg.no/enhetsregisteret/api/enheter/${enhet.organisasjonsnummer}`;
+      const detailRes = await fetch(baseUrl);
       if (detailRes.ok) {
         enriched = await detailRes.json();
+      }
+      const contactRes = await fetch(`${baseUrl}/kontaktinformasjon`);
+      if (contactRes.ok) {
+        const contact = await contactRes.json();
+        enriched = {
+          ...enriched,
+          kontaktinformasjon: {
+            ...(enriched as any).kontaktinformasjon,
+            telefon: contact.telefon || contact.telefonnummer,
+            mobiltelefon: contact.mobiltelefon || contact.mobil,
+            epost: contact.epost || contact.epostadresse,
+            epostadresse: contact.epostadresse || contact.epost,
+          },
+        } as BrregEnhet;
       }
     } catch (error) {
       console.warn('Kunne ikke hente detaljer fra Brreg', error);
@@ -82,19 +96,15 @@ export default function SendersPage() {
   }
 
   async function handleSubmit(sender: Sender) {
-    if (editingSender && 'id' in editingSender) {
-      await fetch(`/api/senders/${editingSender.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sender),
-      });
-    } else {
-      await fetch('/api/senders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sender),
-      });
-    }
+    const now = new Date().toISOString();
+    const senderWithMeta = {
+      ...sender,
+      id: editingSender && 'id' in editingSender ? editingSender.id : crypto.randomUUID(),
+      createdAt: editingSender && 'createdAt' in editingSender ? editingSender.createdAt : now,
+      updatedAt: now,
+    } as Sender;
+
+    storage.saveSender(senderWithMeta);
     setIsFormOpen(false);
     setEditingSender(null);
     fetchSenders();

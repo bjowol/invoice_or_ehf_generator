@@ -28,14 +28,18 @@ export default function PersonForm({
 
   useEffect(() => {
     if (person) {
-      setFormData({
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         ...person,
         address: {
-          ...formData.address,
-          ...person.address,
+          streetAddress:
+            person.address?.streetAddress ?? prev.address?.streetAddress ?? '',
+          postalCode:
+            person.address?.postalCode ?? prev.address?.postalCode ?? '',
+          city: person.address?.city ?? prev.address?.city ?? '',
+          country: person.address?.country ?? prev.address?.country ?? 'Norge',
         },
-      });
+      }));
     }
   }, [person]);
 
