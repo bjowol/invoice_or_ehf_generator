@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  color: #0f172a;
+  background: radial-gradient(circle at 20% 20%, #f0f4ff 0, #f8fafc 25%, #f8fafc 100%);
+  min-height: 100vh;
+}
+
+@layer components {
+  .card {
+    @apply bg-white border border-slate-200 rounded-xl shadow-sm;
+  }
+
+  .section-title {
+    @apply text-xl font-semibold text-slate-900 mb-4;
+  }
+
+  .form-label {
+    @apply block text-sm font-semibold text-slate-800 mb-2;
+  }
+
+  .form-control {
+    @apply w-full min-h-[48px] rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100;
+  }
+
+  .form-control-sm {
+    @apply w-full min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-150;
+  }
+
+  .btn-primary {
+    @apply bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-slate-800 border border-slate-300 hover:border-indigo-300 hover:text-indigo-700;
+  }
+
+  .btn-ghost {
+    @apply text-slate-700 hover:text-indigo-700;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
