@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
+import CookieBanner from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
   title: "BMW Lager EHF Faktura! :O",
@@ -15,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="no">
       <body className="font-sans antialiased">
+        <CookieBanner />
         <Navigation />
         <main className="container mx-auto px-4 py-8">
           {children}
